@@ -26,62 +26,61 @@ CLASS_MAP = {
 }
 
 @st.cache_data
-def load_data_from_folder():
+def load_all_data():
     all_events = []
-    # Quét tất cả file Excel trong thư mục có chữ "LỊCH" hoặc "T3"
-    files = [f for f in os.listdir('.') if f.endswith('.xlsx') and ('LỊCH' in f.upper() or 'T3' in f.upper())]
+    # Quét tất cả file .xlsx trong thư mục
+    files = [f for f in os.listdir('.') if f.endswith('.xlsx')]
     
     for file in files:
         try:
             df = pd.read_excel(file)
+            # Quét từng ô trong file Excel lịch tháng
             for row in range(len(df)):
                 for col in range(len(df.columns)):
-                    cell_content = str(df.iloc[row, col])
-                    
-                    # Tìm các ô có chứa dấu "-" (định dạng lớp học của bạn)
-                    if "-" in cell_content:
-                        # Tìm ngày ở các dòng lân cận (thường là dòng phía trên nội dung lớp)
-                        date_str = None
-                        for i in range(1, 4):
+                    cell_val = str(df.iloc[row, col])
+                    if "-" in cell_val and ":" in cell_val:
+                        # Tìm ngày (duyệt ngược lên trên)
+                        date_found = None
+                        for i in range(1, 5):
                             if row-i >= 0:
-                                val = str(df.iloc[row-i, col])
-                                # Kiểm tra định dạng ngày YYYY-MM-DD
-                                if re.match(r'\d{4}-\d{2}-\d{2}', val):
-                                    date_str = val
+                                p_date = str(df.iloc[row-i, col])
+                                if re.match(r'\d{4}-\d{2}-\d{2}', p_date):
+                                    date_found = p_date
                                     break
                         
-                        if date_str:
-                            lines = cell_content.split('\n')
+                        if date_found:
+                            lines = cell_val.split('\n')
                             for line in lines:
                                 if line.strip().startswith("-"):
                                     # Trích xuất mã lớp (VD: ESG)
-                                    match = re.search(r'- ([A-Z0-9Đ]+)', line)
-                                    code = match.group(1) if match else "Lớp học"
+                                    code_match = re.search(r'- ([A-Z0-9Đ]+)', line)
+                                    code = code_match.group(1) if code_match else "Lớp học"
                                     
                                     all_events.append({
                                         "title": line.strip(),
-                                        "start": date_str,
-                                        "allDay": True, # QUAN TRỌNG: Dòng này giúp bỏ hiển thị 00:00
+                                        "start": date_found,
+                                        "allDay": True,
                                         "color": "#00A859" if "TT" in line or "Hà Nội" in line else "#ED1C24",
                                         "extendedProps": {
                                             "full_name": CLASS_MAP.get(code, "Chương trình đào tạo nghiệp vụ"),
-                                            "detail": line.strip()
+                                            "detail": line.strip(),
+                                            "date": date_found
                                         }
                                     })
-        except:
-            continue
+        except: continue
     return all_events
 
+# --- PHẦN XỬ LÝ HIỂN THỊ ---
 try:
-    events = load_data_from_folder()
+    events = load_all_data()
 
-    st.title("🗓️ KẾ HOẠCH ĐÀO TẠO AGRIBANK 2026")
+    st.title("🗓️ KẾ HOẠCH ĐÀO TẠO AGRIBANK 2026")
     st.markdown("---")
 
-    # 2. CẤU HÌNH LỊCH - LOẠI BỎ GIỜ
+    # Cấu hình lịch ẩn giờ
     calendar_options = {
         "initialView": "dayGridMonth",
-        "displayEventTime": False, # Lệnh này sẽ ẩn hoàn toàn 00:00 trên giao diện
+        "displayEventTime": False,
         "headerToolbar": {
             "left": "prev,next today",
             "center": "title",
@@ -90,15 +89,27 @@ try:
         "locale": "vi",
     }
 
-    state = calendar(events=events, options=calendar_options, key='agri_calendar_v4')
+    # Hiển thị lịch
+    state = calendar(events=events, options=calendar_options, key='agri_cal_v5')
 
-    # 3. NHẤN VÀO HIỆN TÊN CHƯƠNG TRÌNH
+    # DÙNG SESSION_STATE ĐỂ GIỮ THÔNG TIN KHÔNG BỊ ĐÓNG
     if state.get("eventClick"):
-        res = state["eventClick"]["event"]
-        st.sidebar.markdown("---")
-        st.sidebar.subheader("🔍 Chi tiết chương trình")
-        st.sidebar.info(f"**Tên đầy đủ:** \n\n {res['extendedProps']['full_name']}")
-        st.sidebar.success(f"**Thông tin:** \n\n {res['extendedProps']['detail']}")
+        # Lưu thông tin vào bộ nhớ tạm của trình duyệt
+        st.session_state.selected_event = state["eventClick"]["event"]
+
+    # HIỂN THỊ THÔNG TIN CHI TIẾT Ở SIDEBAR (THANH BÊN) ĐỂ KHÔNG BỊ TRÔI
+    if "selected_event" in st.session_state:
+        event = st.session_state.selected_event
+        with st.sidebar:
+            st.header("🔍 Chi tiết lớp học")
+            st.success(f"**Tên chương trình:**\n\n{event['extendedProps']['full_name']}")
+            st.info(f"**Mã & Địa điểm:**\n\n{event['extendedProps']['detail']}")
+            st.warning(f"**Ngày diễn ra:** {event['extendedProps']['date']}")
+            if st.button("Đóng chi tiết"):
+                del st.session_state.selected_event
+                st.rerun()
+    else:
+        st.sidebar.write("📌 *Nhấn vào một lớp trên lịch để xem chi tiết tại đây.*")
 
 except Exception as e:
     st.error(f"Lỗi: {e}")
