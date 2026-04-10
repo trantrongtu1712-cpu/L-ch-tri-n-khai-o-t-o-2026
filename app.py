@@ -21,7 +21,7 @@ CLASS_MAP = {
     "AIKT": "Ứng dụng AI trong kiểm tra, kiểm toán",
     "LĐM": "Lao động mới tuyển dụng",
     "LĐ3C": "Kỹ năng lãnh đạo hiện đại 3C",
-    "KNBH": "Kỹ năng bán hàng chuyên nghiệp",
+    "KNBH": "Kỹ năng bán hàng và chăm sóc khách hàng chuyên nghiệp thời kỳ chuyển đổi số",
     "KNSP": "Kỹ năng sư phạm",
     "KHDN": "Nghiệp vụ cấp tín dụng khách hàng doanh nghiệp",
     "KHCN": "Nghiệp vụ cấp tín dụng khách hàng cá nhân",
