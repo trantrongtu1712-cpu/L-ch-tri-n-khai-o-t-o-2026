@@ -9,7 +9,7 @@ st.set_page_config(page_title="Lịch Đào tạo Agribank 2026", layout="wide")
 
 # 1. TỪ ĐIỂN TRA CỨU TÊN CHƯƠNG TRÌNH
 CLASS_MAP = {
-    "PTDLHV": "Phân tích dữ liệu hành vi khách hàng",
+    "PTDL": "Phân tích dữ liệu và lập báo cáo",
     "KNSPCS": "Kỹ năng sư phạm chuyên sâu",
     "TCBV": "Phát triển tài chính bền vững",
     "TCS": "Tài chính số",
